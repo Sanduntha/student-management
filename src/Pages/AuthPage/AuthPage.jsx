@@ -1,10 +1,10 @@
+// MainLoginPage.js
 import React, { useState } from "react";
-import { Box, Typography, ToggleButton, ToggleButtonGroup } from "@mui/material";
-import LoginPage from "../LoginPage/LoginPage";
-import RegisterPage from "../RegisterPage/RegisterPage";
-import ima from '../../assets/desk.png';
+import { Box, Card, CardContent, ToggleButton, ToggleButtonGroup } from "@mui/material";
+import LoginPage from './LoginPage';
+import RegisterPage from './RegisterPage';
 
-const AuthPage = () => {
+const MainLoginPage = () => {
   const [page, setPage] = useState("login");
 
   const handleChange = (event, newPage) => {
@@ -14,58 +14,47 @@ const AuthPage = () => {
   };
 
   return (
-
-    <div className="img"
-    style={{
-        // backgroundImage:`url(${ima})`
-    }}
+    <Box
+      display="flex"
+      justifyContent="center"
+      alignItems="center"
+      height="695px"
+      sx={{
+        backgroundImage: "url('../../../src/assets/desk.png')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
     >
+      <Card sx={{ display: "flex", boxShadow: 3, borderRadius: 3, padding: 4, bgcolor: "rgba(255, 255, 255, 0.8)", width: 950, height: 600 }}>
+        <CardContent sx={{ display: "flex", alignItems: "center" }}>
+          {/* Left Side - Image Section */}
+          <Box flex={1} sx={{ marginRight: 5 }}>
+            <img src="../../../src/assets/desk.png" alt="Desk" style={{ width: "500px", height: "650px", borderRadius: "10px" }} />
+          </Box>
 
-<div className="card"
-    style={{
-        display:"flex",
-        alignItems:'center',
-        justifyContent:'center',
-        backgroundColor:'aqua',
-        width:750,
-        height:450,
-        marginLeft:380,
-        marginTop:90,
-    }}
-    >
+          {/* Right Side - Form Section */}
+          <Box flex={1} display="flex" flexDirection="column" alignItems="center" sx={{ px: 4 }}>
+            <ToggleButtonGroup
+              value={page}
+              exclusive
+              onChange={handleChange}
+              sx={{ mb: 2 }}
+            >
+              <ToggleButton value="login" sx={{ width: 100, borderRadius: 20, fontSize: 18 }}>
+                LOGIN
+              </ToggleButton>
+              <ToggleButton value="register" sx={{ width: 100, borderRadius: 20, fontSize: 18 }}>
+                REGISTER
+              </ToggleButton>
+            </ToggleButtonGroup>
 
-
-    <Box display="flex" height="100vh">
-      {/* Left side with image */}
-      <Box
-        flex={1}
-        sx={{
-          backgroundImage: "url('/your-image.jpg')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      ></Box>
-
-      {/* Right side with form */}
-      <Box flex={1} display="flex" flexDirection="column" justifyContent="center" alignItems="center">
-        <ToggleButtonGroup
-          value={page}
-          exclusive
-          onChange={handleChange}
-          sx={{ mb: 2 }}
-        >
-          <ToggleButton value="login">LOGIN</ToggleButton>
-          <ToggleButton value="register">REGISTER</ToggleButton>
-        </ToggleButtonGroup>
-        {page === "login" ? <LoginPage /> : <RegisterPage />}
-      </Box>
+            {page === "login" ? <LoginPage /> : <RegisterPage />}
+          </Box>
+        </CardContent>
+      </Card>
     </Box>
-
-    </div>
-
-    </div>
-
   );
 };
 
-export default AuthPage;
+export default MainLoginPage;

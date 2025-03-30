@@ -1,4 +1,4 @@
-import React, { useState } from "react"; 
+import React, { useState } from "react"; // Import useState
 import { Avatar, Box, Button, TextField, Typography, Card, CardContent, ToggleButton, ToggleButtonGroup } from "@mui/material";
 
 export default function LoginPage() {
@@ -18,7 +18,7 @@ export default function LoginPage() {
       alignItems="center"
       height="695px"
       sx={{
-        backgroundImage: "url('../../../src/assets/desk.png')", 
+        backgroundImage: "url('../../../src/assets/desk.png')", // Ensure this path is correct
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
@@ -32,13 +32,15 @@ export default function LoginPage() {
         marginLeft: -20,
       }}>
         <CardContent sx={{ display: "flex", alignItems: "center" }}>
+          {/* Left Side - Image Section */}
           <Box flex={1} sx={{ marginRight: 5 }}>
             <Avatar
-              src="../../../src/assets/desk.png" 
+              src="../../../src/assets/desk.png" // Ensure this path is correct
               sx={{ width: "500px", height: "650px", borderRadius: 2, marginLeft: -5, marginBottom: -3, marginTop: -2 }}
             />
           </Box>
 
+          {/* Right Side - Form Section */}
           <Box flex={1} display="flex" flexDirection="column" alignItems="center" sx={{ px: 4 }}>
             <Box flex={1} display="flex" flexDirection="column" justifyContent="center" alignItems="center">
               <ToggleButtonGroup
@@ -53,8 +55,8 @@ export default function LoginPage() {
                     width: 100,
                     borderRadius: 20,
                     padding: 0,
-                    bgcolor: page === "register" ? "rgba(242, 186, 29, 1)" : "transparent", 
-                    color: page === "register" ? "black" : "rgba(242, 186, 29, 1)", 
+                    bgcolor: page === "register" ? "rgba(242, 186, 29, 1)" : "transparent", // Orange background when on register page
+                    color: page === "register" ? "black" : "rgba(242, 186, 29, 1)", // Black text when on register page, orange when inactive
                     fontSize: 18,
                     fontFamily: "Bebas Neue",
                     fontWeight: 400,
@@ -70,8 +72,8 @@ export default function LoginPage() {
                   sx={{
                     width: 100,
                     borderRadius: 20,
-                    bgcolor: page === "login" ? "rgba(242, 186, 29, 1)" : "transparent",
-                    color: page === "register" ? "black" : "rgba(242, 186, 29, 1)", 
+                    bgcolor: page === "login" ? "rgba(242, 186, 29, 1)" : "transparent", // Orange background when on login page
+                    color: page === "register" ? "black" : "rgba(242, 186, 29, 1)", // Black text when on register page, orange when inactive
                     padding: 0,
                     fontSize: 17,
                     fontFamily: "Bebas Neue",
