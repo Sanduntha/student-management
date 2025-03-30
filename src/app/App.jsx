@@ -1,15 +1,13 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import LoginPage from '../Pages/LoginPage/LoginPage';
-import './App.css';
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import LoginPage from "../Pages/LoginPage/LoginPage";
+import FormPage from "../Pages/FormPage/FormPage"; // Your target page
 
 function App() {
   return (
     <Router>
       <Routes>
         <Route path="/" element={<LoginPage />} />
-
-        {/* <Route path="/form" element={<FormPage />} /> */}
+        <Route path="/dashboard" element={<FormPage />} /> 
       </Routes>
     </Router>
   );

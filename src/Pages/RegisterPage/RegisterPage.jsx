@@ -2,15 +2,6 @@ import { Avatar, Box, Button, TextField, Typography, Card, CardContent, ToggleBu
 import React from "react";
 
 export default function RegisterPage({ switchPage }) {
-
-    const [page, setPage] = useState("login");
-  
-    const handleChange = (event, newPage) => {
-      if (newPage !== null) {
-        setPage(newPage);
-      }
-    };
-
   return (
     <Box
       display="flex"
@@ -37,8 +28,7 @@ export default function RegisterPage({ switchPage }) {
           {/* Right Side - Form Section */}
           <Box flex={1} display="flex" flexDirection="column" alignItems="center" sx={{ px: 4 }}>
             <Box flex={1} display="flex" flexDirection="column" justifyContent="center" alignItems="center">
-              <ToggleButtonGroup 
-              sx={{ mb: 2 }}>
+              {/* <ToggleButtonGroup sx={{ mb: 2 }}>
                 <ToggleButton
                   value="login"
                   sx={{
@@ -71,7 +61,7 @@ export default function RegisterPage({ switchPage }) {
                 >
                   REGISTER
                 </ToggleButton>
-              </ToggleButtonGroup>
+              </ToggleButtonGroup> */}
             </Box>
             <Typography
               gutterBottom
