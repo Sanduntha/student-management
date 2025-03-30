@@ -87,7 +87,6 @@ export default function LoginPage() {
             >
               ACPT Institute
             </Typography>
-
             <TextField label="Email" variant="outlined" sx={{ mb: 2, width: 398, marginLeft: -6, marginBottom: 10 }} />
             <TextField label="Password" variant="outlined" type="password" sx={{ mb: 2, width: 398, marginLeft: -6 }} />
             <Button
