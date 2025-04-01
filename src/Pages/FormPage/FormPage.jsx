@@ -25,224 +25,255 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUserPlus, faRightFromBracket } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import Swal from 'sweetalert2';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const FormPage = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [students, setStudents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [openAddDialog, setOpenAddDialog] = useState(false);
-  const [openEditDialog, setOpenEditDialog] = useState(false);
-  const [formData, setFormData] = useState({
-    student_name: '',
-    student_age: '',
-    student_address: '',
-    student_contact: ''
+  const goTo = useNavigate();
+  const [studentList, setStudentList] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState(null);
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [studentForm, setStudentForm] = useState({
+    name: '',
+    age: '',
+    address: '',
+    contact: ''
   });
-  const [editingStudentId, setEditingStudentId] = useState(null);
+  const [currentStudentId, setCurrentStudentId] = useState(null);
 
+  // Check authentication
   useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      navigate('/', { replace: true });
+    const userToken = localStorage.getItem('authToken');
+    if (!userToken) {
+      goTo('/');
     }
-  }, [location, navigate]);
+  }, []);
 
+  // Load students
   useEffect(() => {
-    const fetchStudents = async () => {
+    const getStudents = async () => {
       try {
-        const token = localStorage.getItem('authToken');
-        if (!token) {
-          setError('Unauthorized: No token found');
-          navigate('/', { replace: true });
+        const userToken = localStorage.getItem('authToken');
+        if (!userToken) {
+          setErrorMessage('Please login first');
+          goTo('/');
           return;
         }
 
         const response = await axios.get('https://student-api.acpt.lk/api/student/getAll', {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${userToken}` },
         });
 
         if (Array.isArray(response.data)) {
-          setStudents(response.data);
+          // Standardize the student data format
+          const formattedStudents = response.data.map(student => ({
+            id: student.id,
+            student_name: student.student_name || student.name || '',
+            student_age: student.student_age || student.age || '',
+            student_address: student.student_address || student.address || '',
+            student_contact: student.student_contact || student.contact || ''
+          }));
+          setStudentList(formattedStudents);
         } else {
-          throw new Error('Unexpected API response format');
+          throw new Error('Server returned unexpected data format');
         }
-      } catch (error) {
-        console.error('Error fetching students:', error);
-        setError('Failed to load students');
+      } catch (err) {
+        console.error('Error loading students:', err);
+        setErrorMessage('Could not load students');
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
 
-    fetchStudents();
-  }, [navigate]);
+    getStudents();
+  }, [goTo]);
 
-  const handleAddStudent = () => {
-    setOpenAddDialog(true);
+  // Form dialog handlers
+  const openAddStudentDialog = () => setShowAddDialog(true);
+  const closeAddStudentDialog = () => {
+    setShowAddDialog(false);
+    setStudentForm({ name: '', age: '', address: '', contact: '' });
   };
 
-  const handleCloseAddDialog = () => {
-    setOpenAddDialog(false);
-    setFormData({
-      student_name: '',
-      student_age: '',
-      student_address: '',
-      student_contact: ''
-    });
+  const closeEditStudentDialog = () => {
+    setShowEditDialog(false);
+    setStudentForm({ name: '', age: '', address: '', contact: '' });
   };
 
-  const handleCloseEditDialog = () => {
-    setOpenEditDialog(false);
-    setFormData({
-      student_name: '',
-      student_age: '',
-      student_address: '',
-      student_contact: ''
-    });
-  };
-
-  const handleFormChange = (e) => {
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setStudentForm(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleAddSubmit = async (e) => {
+  // Add new student with proper data transformation
+  const addStudent = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        Swal.fire('Error!', 'No token found. Please log in again.', 'error');
-        navigate('/', { replace: true });
+      const userToken = localStorage.getItem('authToken');
+      if (!userToken) {
+        Swal.fire('Error!', 'Please login again', 'error');
+        goTo('/');
         return;
       }
 
+      const apiFormData = {
+        student_name: studentForm.name,
+        student_age: studentForm.age,
+        student_address: studentForm.address,
+        student_contact: studentForm.contact
+      };
+
       const response = await axios.post(
         'https://student-api.acpt.lk/api/student/save',
-        formData,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+        apiFormData,
+        { headers: { Authorization: `Bearer ${userToken}` } }
       );
 
       if (response.status === 200 || response.status === 201) {
-        Swal.fire('Success!', 'Student added successfully.', 'success');
-        setStudents([...students, response.data]);
-        handleCloseAddDialog();
+        // Ensure we have the complete student data including ID
+        const newStudent = {
+          id: response.data.id,
+          student_name: response.data.student_name || studentForm.name,
+          student_age: response.data.student_age || studentForm.age,
+          student_address: response.data.student_address || studentForm.address,
+          student_contact: response.data.student_contact || studentForm.contact
+        };
+
+        setStudentList(prevStudents => [...prevStudents, newStudent]);
+        Swal.fire('Success!', 'Student added successfully', 'success');
+        closeAddStudentDialog();
       } else {
         throw new Error('Failed to add student');
       }
-    } catch (error) {
-      console.error('Error adding student:', error);
+    } catch (err) {
+      console.error('Error adding student:', err);
       Swal.fire('Error!', 'Failed to add student. Please try again.', 'error');
     }
   };
 
-  const handleEdit = (studentId) => {
-    const studentToEdit = students.find(student => student.id === studentId);
-    setFormData({
-      student_name: studentToEdit.student_name,
-      student_age: studentToEdit.student_age,
-      student_address: studentToEdit.student_address,
-      student_contact: studentToEdit.student_contact
-    });
-    setEditingStudentId(studentId);
-    setOpenEditDialog(true);
-  };
-
-  const handleEditSubmit = async (e) => {
+  // Update student with proper data transformation
+  const updateStudent = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        Swal.fire('Error!', 'No token found. Please log in again.', 'error');
-        navigate('/', { replace: true });
+      const userToken = localStorage.getItem('authToken');
+      if (!userToken) {
+        Swal.fire('Error!', 'Please login again', 'error');
+        goTo('/');
         return;
       }
 
+      const apiFormData = {
+        student_name: studentForm.name,
+        student_age: studentForm.age,
+        student_address: studentForm.address,
+        student_contact: studentForm.contact
+      };
+
       const response = await axios.put(
-        `https://student-api.acpt.lk/api/student/update/${editingStudentId}`,
-        formData,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+        `https://student-api.acpt.lk/api/student/update/${currentStudentId}`,
+        apiFormData,
+        { headers: { Authorization: `Bearer ${userToken}` } }
       );
 
       if (response.status === 200) {
-        Swal.fire('Success!', 'Student updated successfully.', 'success');
-        setStudents(students.map(student => student.id === editingStudentId ? response.data : student));
-        handleCloseEditDialog();
+        const updatedStudent = {
+          id: currentStudentId,
+          student_name: response.data.student_name || studentForm.name,
+          student_age: response.data.student_age || studentForm.age,
+          student_address: response.data.student_address || studentForm.address,
+          student_contact: response.data.student_contact || studentForm.contact
+        };
+
+        setStudentList(prevStudents => 
+          prevStudents.map(student => 
+            student.id === currentStudentId ? updatedStudent : student
+          )
+        );
+        Swal.fire('Success!', 'Student updated successfully', 'success');
+        closeEditStudentDialog();
       } else {
         throw new Error('Failed to update student');
       }
-    } catch (error) {
-      console.error('Error updating student:', error);
+    } catch (err) {
+      console.error('Error updating student:', err);
       Swal.fire('Error!', 'Failed to update student. Please try again.', 'error');
     }
   };
 
-  const handleDelete = (studentId) => {
+  // Prepare edit form with current student data
+  const prepareEditForm = (studentId) => {
+    const studentToEdit = studentList.find(student => student.id === studentId);
+    if (studentToEdit) {
+      setStudentForm({
+        name: studentToEdit.student_name,
+        age: studentToEdit.student_age,
+        address: studentToEdit.student_address,
+        contact: studentToEdit.student_contact
+      });
+      setCurrentStudentId(studentId);
+      setShowEditDialog(true);
+    }
+  };
+
+  // Delete student with confirmation
+  const deleteStudent = (studentId) => {
     Swal.fire({
       title: 'Are you sure?',
-      text: 'Do you really want to delete this student?',
+      text: 'You won\'t be able to revert this!',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'Yes, delete it!',
-      cancelButtonText: 'No, cancel!',
-      reverseButtons: true
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, delete it!'
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          const token = localStorage.getItem('authToken');
-          if (!token) {
-            Swal.fire('Error!', 'No token found. Please log in again.', 'error');
-            navigate('/', { replace: true });
+          const userToken = localStorage.getItem('authToken');
+          if (!userToken) {
+            Swal.fire('Error!', 'Please login again', 'error');
+            goTo('/');
             return;
           }
 
-          const response = await axios.delete(
+          await axios.delete(
             `https://student-api.acpt.lk/api/student/delete/${studentId}`,
-            { headers: { Authorization: `Bearer ${token}` } }
+            { headers: { Authorization: `Bearer ${userToken}` } }
           );
 
-          if (response.status === 200) {
-            setStudents(prev => prev.filter(student => student.id !== studentId));
-            Swal.fire('Deleted!', 'The student has been deleted.', 'success');
-          } else {
-            throw new Error('Failed to delete student.');
-          }
-        } catch (error) {
-          console.error('Error deleting student:', error);
-          Swal.fire('Error!', 'Failed to delete the student. Please try again.', 'error');
+          setStudentList(prevStudents => prevStudents.filter(student => student.id !== studentId));
+          Swal.fire('Deleted!', 'Student has been deleted.', 'success');
+        } catch (err) {
+          console.error('Error deleting student:', err);
+          Swal.fire('Error!', 'Failed to delete student', 'error');
         }
       }
     });
   };
 
-  const handleLogout = () => {
+  const logout = () => {
     localStorage.removeItem('authToken');
-    navigate('/', { replace: true });
-    window.location.reload();
+    goTo('/');
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <Typography>Loading students...</Typography>
       </Box>
     );
   }
 
-  if (error) {
+  if (errorMessage) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
-        <Typography color="error" variant="h6" sx={{ mb: 2 }}>{error}</Typography>
-        <Button variant="contained" onClick={() => window.location.reload()} sx={{ backgroundColor: 'rgba(242, 186, 29, 1)', color: 'black', fontWeight: 'bold' }}>
-          Retry
+        <Typography color="error" variant="h6" sx={{ mb: 2 }}>{errorMessage}</Typography>
+        <Button 
+          variant="contained" 
+          onClick={() => window.location.reload()}
+          sx={{ backgroundColor: 'rgba(242, 186, 29, 1)', color: 'black' }}
+        >
+          Try Again
         </Button>
       </Box>
     );
@@ -250,22 +281,19 @@ const FormPage = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 400, mb: 3, fontFamily: 'Bebas Neue', fontSize: 40 }}>
-        MY STUDENT
+      <Typography variant="h4" gutterBottom sx={{ mb: 3, fontFamily: 'Bebas Neue', fontSize: 40 }}>
+        MY STUDENTS
       </Typography>
 
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
         <Button
           variant="contained"
           startIcon={<FontAwesomeIcon icon={faUserPlus} />}
-          onClick={handleAddStudent}
+          onClick={openAddStudentDialog}
           sx={{
-            fontSize: '16px',
-            padding: '10px 20px',
             backgroundColor: 'rgba(242, 186, 29, 1)',
-            borderRadius: 30,
             color: 'black',
-            fontWeight: 'bold',
+            borderRadius: 30,
             marginRight: 15,
           }}
         >
@@ -277,37 +305,35 @@ const FormPage = () => {
         backgroundColor: '#fff',
         borderRadius: 2,
         border: '4px solid black',
-        boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
         padding: 4,
-        transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
         width: 1200,
         marginLeft: 12,
       }}>
-        <TableContainer component={Paper} elevation={3}>
-          <Table sx={{ minWidth: 650 }} aria-label="student table">
+        <TableContainer component={Paper}>
+          <Table>
             <TableHead>
               <TableRow sx={{ backgroundColor: 'black' }}>
-                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Name</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Age</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Address</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Contact</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Action</TableCell>
+                <TableCell sx={{ color: 'white' }}>Name</TableCell>
+                <TableCell sx={{ color: 'white' }}>Age</TableCell>
+                <TableCell sx={{ color: 'white' }}>Address</TableCell>
+                <TableCell sx={{ color: 'white' }}>Contact</TableCell>
+                <TableCell sx={{ color: 'white' }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {students.length > 0 ? (
-                students.map((student) => (
+              {studentList.length > 0 ? (
+                studentList.map((student) => (
                   <TableRow key={student.id}>
-                    <TableCell>{student.student_name || 'N/A'}</TableCell>
-                    <TableCell>{student.student_age || 'N/A'}</TableCell>
-                    <TableCell>{student.student_address || 'N/A'}</TableCell>
-                    <TableCell>{student.student_contact || 'N/A'}</TableCell>
+                    <TableCell>{student.student_name}</TableCell>
+                    <TableCell>{student.student_age}</TableCell>
+                    <TableCell>{student.student_address}</TableCell>
+                    <TableCell>{student.student_contact}</TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex' }}>
-                        <IconButton onClick={() => handleEdit(student.id)}>
+                        <IconButton onClick={() => prepareEditForm(student.id)}>
                           <EditIcon />
                         </IconButton>
-                        <IconButton onClick={() => handleDelete(student.id)}>
+                        <IconButton onClick={() => deleteStudent(student.id)}>
                           <DeleteIcon />
                         </IconButton>
                       </Box>
@@ -316,7 +342,7 @@ const FormPage = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} sx={{ textAlign: 'center' }}>No students available</TableCell>
+                  <TableCell colSpan={5} sx={{ textAlign: 'center' }}>No students found</TableCell>
                 </TableRow>
               )}
             </TableBody>
@@ -324,24 +350,24 @@ const FormPage = () => {
         </TableContainer>
       </Box>
 
-      <Dialog open={openAddDialog} onClose={handleCloseAddDialog} maxWidth="sm" fullWidth>
+      {/* Add Student Dialog */}
+      <Dialog open={showAddDialog} onClose={closeAddStudentDialog} maxWidth="sm" fullWidth>
         <DialogTitle>
-          <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', textAlign: 'center' }}>
+          <Typography variant="h4" sx={{ textAlign: 'center' }}>
             ADD STUDENT
           </Typography>
         </DialogTitle>
         <Divider />
         <DialogContent>
-          <form onSubmit={handleAddSubmit}>
+          <form onSubmit={addStudent}>
             <Grid container spacing={3} sx={{ mt: 1 }}>
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
                   label="Name"
-                  name="student_name"
-                  value={formData.student_name}
-                  onChange={handleFormChange}
-                  variant="outlined"
+                  name="name"
+                  value={studentForm.name}
+                  onChange={handleInputChange}
                   required
                 />
               </Grid>
@@ -349,11 +375,10 @@ const FormPage = () => {
                 <TextField
                   fullWidth
                   label="Age"
-                  name="student_age"
+                  name="age"
                   type="number"
-                  value={formData.student_age}
-                  onChange={handleFormChange}
-                  variant="outlined"
+                  value={studentForm.age}
+                  onChange={handleInputChange}
                   required
                   inputProps={{ min: 1 }}
                 />
@@ -362,10 +387,9 @@ const FormPage = () => {
                 <TextField
                   fullWidth
                   label="Address"
-                  name="student_address"
-                  value={formData.student_address}
-                  onChange={handleFormChange}
-                  variant="outlined"
+                  name="address"
+                  value={studentForm.address}
+                  onChange={handleInputChange}
                   required
                   multiline
                 />
@@ -374,10 +398,9 @@ const FormPage = () => {
                 <TextField
                   fullWidth
                   label="Contact"
-                  name="student_contact"
-                  value={formData.student_contact}
-                  onChange={handleFormChange}
-                  variant="outlined"
+                  name="contact"
+                  value={studentForm.contact}
+                  onChange={handleInputChange}
                   required
                 />
               </Grid>
@@ -386,23 +409,16 @@ const FormPage = () => {
         </DialogContent>
         <Divider />
         <DialogActions sx={{ p: 3 }}>
-          <Button onClick={handleCloseAddDialog} sx={{ mr: 2 }}>
+          <Button onClick={closeAddStudentDialog} sx={{ mr: 2 }}>
             Cancel
           </Button>
           <Button
-            onClick={handleAddSubmit}
+            onClick={addStudent}
             variant="contained"
-            size="large"
             sx={{
-              py: 1.5,
-              fontWeight: 'bold',
-              fontSize: '1rem',
-              display: 'flex',
-              alignItems: 'center',
               backgroundColor: 'rgba(242, 186, 29, 1)',
-              borderRadius: 30,
               color: 'black',
-              '&:hover': { backgroundColor: 'rgba(242, 186, 29, 1)' }
+              borderRadius: 30,
             }}
           >
             SAVE
@@ -410,24 +426,24 @@ const FormPage = () => {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={openEditDialog} onClose={handleCloseEditDialog} maxWidth="sm" fullWidth>
+      {/* Edit Student Dialog */}
+      <Dialog open={showEditDialog} onClose={closeEditStudentDialog} maxWidth="sm" fullWidth>
         <DialogTitle>
-          <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', textAlign: 'center' }}>
+          <Typography variant="h4" sx={{ textAlign: 'center' }}>
             EDIT STUDENT
           </Typography>
         </DialogTitle>
         <Divider />
         <DialogContent>
-          <form onSubmit={handleEditSubmit}>
+          <form onSubmit={updateStudent}>
             <Grid container spacing={3} sx={{ mt: 1 }}>
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
                   label="Name"
-                  name="student_name"
-                  value={formData.student_name}
-                  onChange={handleFormChange}
-                  variant="outlined"
+                  name="name"
+                  value={studentForm.name}
+                  onChange={handleInputChange}
                   required
                 />
               </Grid>
@@ -435,11 +451,10 @@ const FormPage = () => {
                 <TextField
                   fullWidth
                   label="Age"
-                  name="student_age"
+                  name="age"
                   type="number"
-                  value={formData.student_age}
-                  onChange={handleFormChange}
-                  variant="outlined"
+                  value={studentForm.age}
+                  onChange={handleInputChange}
                   required
                   inputProps={{ min: 1 }}
                 />
@@ -448,10 +463,9 @@ const FormPage = () => {
                 <TextField
                   fullWidth
                   label="Address"
-                  name="student_address"
-                  value={formData.student_address}
-                  onChange={handleFormChange}
-                  variant="outlined"
+                  name="address"
+                  value={studentForm.address}
+                  onChange={handleInputChange}
                   required
                   multiline
                 />
@@ -460,10 +474,9 @@ const FormPage = () => {
                 <TextField
                   fullWidth
                   label="Contact"
-                  name="student_contact"
-                  value={formData.student_contact}
-                  onChange={handleFormChange}
-                  variant="outlined"
+                  name="contact"
+                  value={studentForm.contact}
+                  onChange={handleInputChange}
                   required
                 />
               </Grid>
@@ -472,40 +485,30 @@ const FormPage = () => {
         </DialogContent>
         <Divider />
         <DialogActions sx={{ p: 3 }}>
-          <Button onClick={handleCloseEditDialog} sx={{ mr: 2 }}>
+          <Button onClick={closeEditStudentDialog} sx={{ mr: 2 }}>
             Cancel
           </Button>
           <Button
-            onClick={handleEditSubmit}
+            onClick={updateStudent}
             variant="contained"
-            size="large"
             sx={{
-              py: 1.5,
-              fontWeight: 'bold',
-              fontSize: '1rem',
-              display: 'flex',
-              alignItems: 'center',
               backgroundColor: 'rgba(242, 186, 29, 1)',
-              borderRadius: 30,
               color: 'black',
-              '&:hover': { backgroundColor: 'rgba(242, 186, 29, 1)' }
+              borderRadius: 30,
             }}
           >
-            SAVE
+            UPDATE
           </Button>
         </DialogActions>
       </Dialog>
 
       <Button
         variant="contained"
-        onClick={handleLogout}
+        onClick={logout}
         sx={{
-          fontSize: '16px',
-          padding: '10px 20px',
           backgroundColor: 'rgba(242, 186, 29, 1)',
-          borderRadius: 30,
           color: 'black',
-          fontWeight: 'bold',
+          borderRadius: 30,
           marginLeft: 12,
           marginTop: 5
         }}
