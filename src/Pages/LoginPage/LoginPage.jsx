@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom"; // Import useNavigate
+import { useNavigate } from "react-router-dom"; 
 import { 
   Avatar, 
   Box, 
@@ -23,7 +23,7 @@ export default function LoginPage() {
     password: ''
   });
 
-  const navigate = useNavigate(); // Initialize navigate function
+  const navigate = useNavigate(); 
 
   const handleChange = (event, newPage) => {
     if (newPage !== null) {
@@ -47,12 +47,10 @@ export default function LoginPage() {
     try {
       const response = await axios.post('https://student-api.acpt.lk/api/login', loginData);
       
-      // Assuming the API returns a token upon successful login
       const { token } = response.data;
       localStorage.setItem('authToken', token);
       
-      // Navigate to the desired page after successful login
-      navigate("/dashboard"); // Change "/dashboard" to the desired route
+      navigate("/dashboard");
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');
     } finally {
@@ -107,11 +105,12 @@ export default function LoginPage() {
                     width: 100,
                     borderRadius: 20,
                     bgcolor: page === "login" ? "rgba(242, 186, 29, 1)" : "transparent",
-                    color: page === "register" ? "black" : "rgba(242, 186, 29, 1)", 
+                    color: page === "register" ? "black" : "black", 
                     padding: 0,
                     fontSize: 17,
                     fontFamily: "Bebas Neue",
                     fontWeight: 400,
+                    
                   }}
                 >
                   REGISTER
@@ -160,8 +159,7 @@ export default function LoginPage() {
                       width: 150,
                       marginLeft: 25,
                     }}
-                  >
-                    {loading ? <CircularProgress size={24} /> : 'Login'}
+                  >Login
                   </Button>
                 </form>
               </>
